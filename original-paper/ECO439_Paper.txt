@@ -1,0 +1,736 @@
+
+// Setting up everything
+clear all
+macro drop _all
+set more off
+set matsize 800
+
+cd "T:\Jordan Imahori\ECO439"
+
+log close _all
+log using "ECO439_paper.log", replace
+
+
+// Loading dataset
+use "master_data_updated.dta", clear
+
+// Make sure estout is installed 
+
+
+			*====== CALCULATING MURDER RATES =======*
+
+
+// Generating murder rates
+gen mrate_2004 = (murders_2004/pop_2004)*100000
+gen mrate_2005 = (murders_2005/pop_2005)*100000
+gen mrate_2006 = (murders_2006/pop_2006)*100000
+gen mrate_2007 = (murders_2007/pop_2007)*100000
+gen mrate_2008 = (murders_2008/pop_2008)*100000
+gen mrate_2009 = (murders_2009/pop_2009)*100000
+gen mrate_2010 = (murders_2010/pop_2010)*100000
+gen mrate_2011 = (murders_2011/pop_2011)*100000
+gen mrate_2012 = (murders_2012/pop_2012)*100000
+gen mrate_2013 = (murders_2013/pop_2013)*100000
+gen mrate_2014 = (murders_2014/pop_2014)*100000
+
+
+// Generating firearm murder rates (per 100,000)
+gen fmrate_2004 = (fmurders_2004/pop_2004)*100000
+gen fmrate_2005 = (fmurders_2005/pop_2005)*100000
+gen fmrate_2006 = (fmurders_2006/pop_2006)*100000
+gen fmrate_2007 = (fmurders_2007/pop_2007)*100000
+gen fmrate_2008 = (fmurders_2008/pop_2008)*100000
+gen fmrate_2009 = (fmurders_2009/pop_2009)*100000
+gen fmrate_2010 = (fmurders_2010/pop_2010)*100000
+gen fmrate_2011 = (fmurders_2011/pop_2011)*100000
+gen fmrate_2012 = (fmurders_2012/pop_2012)*100000
+gen fmrate_2013 = (fmurders_2013/pop_2013)*100000
+gen fmrate_2014 = (fmurders_2014/pop_2014)*100000
+
+
+// Generating variables for increase in murder rates
+gen dmrate_2005 = mrate_2005 - mrate_2004
+gen dmrate_2006 = mrate_2006 - mrate_2005
+gen dmrate_2007 = mrate_2007 - mrate_2006
+gen dmrate_2008 = mrate_2008 - mrate_2007
+gen dmrate_2009 = mrate_2009 - mrate_2008
+gen dmrate_2010 = mrate_2010 - mrate_2009
+gen dmrate_2011 = mrate_2011 - mrate_2010
+gen dmrate_2012 = mrate_2012 - mrate_2011
+gen dmrate_2013 = mrate_2013 - mrate_2012
+gen dmrate_2014 = mrate_2014 - mrate_2013
+
+
+// Generating dummy for increases in murder rate of over 15
+gen shock_2005 = 1 if (mrate_2005)-(mrate_2004) > 15
+replace shock_2005 = 0 if shock_2005 == .
+gen shock_2006 = 1 if (mrate_2006)-(mrate_2005) > 15
+replace shock_2006 = 0 if shock_2006 == .
+gen shock_2007 = 1 if (mrate_2007)-(mrate_2006) > 15
+replace shock_2007 = 0 if shock_2007 == .
+gen shock_2008 = 1 if (mrate_2008)-(mrate_2007) > 15
+replace shock_2008 = 0 if shock_2008 == .
+gen shock_2009 = 1 if (mrate_2009)-(mrate_2008) > 15
+replace shock_2009 = 0 if shock_2009 == .
+gen shock_2010 = 1 if (mrate_2010)-(mrate_2009) > 15
+replace shock_2010 = 0 if shock_2010 == .
+gen shock_2011 = 1 if (mrate_2011)-(mrate_2010) > 15
+replace shock_2011 = 0 if shock_2011 == .
+gen shock_2012 = 1 if (mrate_2012)-(mrate_2011) > 15
+replace shock_2012 = 0 if shock_2012 == .
+gen shock_2013 = 1 if (mrate_2013)-(mrate_2012) > 15
+replace shock_2013 = 0 if shock_2013 == .
+gen shock_2014 = 1 if (mrate_2014)-(mrate_2013) > 15
+replace shock_2014 = 0 if shock_2014 == .
+
+
+// Generating dummy for increases in murder rate of over 20
+gen mshock_2005 = 1 if (mrate_2005)-(mrate_2004) > 20
+replace mshock_2005 = 0 if mshock_2005 == .
+gen mshock_2006 = 1 if (mrate_2006)-(mrate_2005) > 20
+replace mshock_2006 = 0 if mshock_2006 == .
+gen mshock_2007 = 1 if (mrate_2007)-(mrate_2006) > 20
+replace mshock_2007 = 0 if mshock_2007 == .
+gen mshock_2008 = 1 if (mrate_2008)-(mrate_2007) > 20
+replace mshock_2008 = 0 if mshock_2008 == .
+gen mshock_2009 = 1 if (mrate_2009)-(mrate_2008) > 20
+replace mshock_2009 = 0 if mshock_2009 == .
+gen mshock_2010 = 1 if (mrate_2010)-(mrate_2009) > 20
+replace mshock_2010 = 0 if mshock_2010 == .
+gen mshock_2011 = 1 if (mrate_2011)-(mrate_2010) > 20
+replace mshock_2011 = 0 if mshock_2011 == .
+gen mshock_2012 = 1 if (mrate_2012)-(mrate_2011) > 20
+replace mshock_2012 = 0 if mshock_2012 == .
+gen mshock_2013 = 1 if (mrate_2013)-(mrate_2012) > 20
+replace mshock_2013 = 0 if mshock_2013 == .
+gen mshock_2014 = 1 if (mrate_2014)-(mrate_2013) > 20
+replace mshock_2014 = 0 if mshock_2014 == .
+
+
+// Generating dummy for increases in the murder rate of over 30
+gen lshock_2005 = 1 if (mrate_2005)-(mrate_2004) > 30
+replace lshock_2005 = 0 if lshock_2005 == .
+gen lshock_2006 = 1 if (mrate_2006)-(mrate_2005) > 30
+replace lshock_2006 = 0 if lshock_2006 == .
+gen lshock_2007 = 1 if (mrate_2007)-(mrate_2006) > 30
+replace lshock_2007 = 0 if lshock_2007 == .
+gen lshock_2008 = 1 if (mrate_2008)-(mrate_2007) > 30
+replace lshock_2008 = 0 if lshock_2008 == .
+gen lshock_2009 = 1 if (mrate_2009)-(mrate_2008) > 30
+replace lshock_2009 = 0 if lshock_2009 == .
+gen lshock_2010 = 1 if (mrate_2010)-(mrate_2009) > 30
+replace lshock_2010 = 0 if lshock_2010 == .
+gen lshock_2011 = 1 if (mrate_2011)-(mrate_2010) > 30
+replace lshock_2011 = 0 if lshock_2011 == .
+gen lshock_2012 = 1 if (mrate_2012)-(mrate_2011) > 30
+replace lshock_2012 = 0 if lshock_2012 == .
+gen lshock_2013 = 1 if (mrate_2013)-(mrate_2012) > 30
+replace lshock_2013 = 0 if lshock_2013 == .
+gen lshock_2014 = 1 if (mrate_2014)-(mrate_2013) > 30
+replace lshock_2014 = 0 if lshock_2014 == .
+
+
+// Generating dummy for increases in murder rate of over 40
+gen pshock_2005 = 1 if (mrate_2005)-(mrate_2004) > 40
+replace pshock_2005 = 0 if pshock_2005 == .
+gen pshock_2006 = 1 if (mrate_2006)-(mrate_2005) > 40
+replace pshock_2006 = 0 if pshock_2006 == .
+gen pshock_2007 = 1 if (mrate_2007)-(mrate_2006) > 40
+replace pshock_2007 = 0 if pshock_2007 == .
+gen pshock_2008 = 1 if (mrate_2008)-(mrate_2007) > 40
+replace pshock_2008 = 0 if pshock_2008 == .
+gen pshock_2009 = 1 if (mrate_2009)-(mrate_2008) > 40
+replace pshock_2009 = 0 if pshock_2009 == .
+gen pshock_2010 = 1 if (mrate_2010)-(mrate_2009) > 40
+replace pshock_2010 = 0 if pshock_2010 == .
+gen pshock_2011 = 1 if (mrate_2011)-(mrate_2010) > 40
+replace pshock_2011 = 0 if pshock_2011 == .
+gen pshock_2012 = 1 if (mrate_2012)-(mrate_2011) > 40
+replace pshock_2012 = 0 if pshock_2012 == .
+gen pshock_2013 = 1 if (mrate_2013)-(mrate_2012) > 40
+replace pshock_2013 = 0 if pshock_2013 == .
+gen pshock_2014 = 1 if (mrate_2014)-(mrate_2013) > 40
+replace pshock_2014 = 0 if pshock_2014 == .
+
+// Generating dummies for whether an individual was enrolled in each year
+gen enroll_2004 = 1 if age>25 & age<30
+replace enroll_2004 = 0 if enroll_2004 == .
+gen enroll_2005 = 1 if age>24 & age<29
+replace enroll_2005 = 0 if enroll_2005 == .
+gen enroll_2006 = 1 if age>23 & age<28
+replace enroll_2006 = 0 if enroll_2006 == .
+gen enroll_2007 = 1 if age>22 & age<27
+replace enroll_2007 = 0 if enroll_2007 == .
+gen enroll_2008 = 1 if age>21 & age<26
+replace enroll_2008 = 0 if enroll_2008 == .
+gen enroll_2009 = 1 if age>20 & age<25
+replace enroll_2009 = 0 if enroll_2009 == .
+gen enroll_2010 = 1 if age>19 & age<24
+replace enroll_2010 = 0 if enroll_2010 == .
+gen enroll_2011 = 1 if age>18 & age<23
+replace enroll_2011 = 0 if enroll_2011 == .
+
+
+
+
+	*===== SETTING UP CONTROLS FOR MIGRATION AND OTHER DEMOGRAPHICS =====*
+
+// Creating a factor variable for age in 2008
+gen age_2008 = age-7
+replace age_2008 = . if age_2008>24 | age_2008<14	
+	
+// Creating a dummy for migration
+gen migration = "No" if bplmx == geo1_mx2015
+replace migration = "Yes" if bplmx != geo1_mx2015
+
+// Restricting sample to those born in Mexico with Mexican citizenship who did not migrate
+keep if bplcountry == 22060
+keep if citizen == 1
+drop if migration == "Yes"
+drop if yrschool >20
+
+// Creating macro of demographic controls & treatments 
+global controls urban sex indig sizemx
+global mrate mrate_2004 mrate_2005 mrate_2006 mrate_2007 mrate_2008 mrate_2009 mrate_2010 mrate_2011 mrate_2012
+global dmrate dmrate_2005 dmrate_2006 dmrate_2007 dmrate_2008 dmrate_2009 dmrate_2010 dmrate_2011 dmrate_2012
+global shock shock_2005 shock_2006 shock_2007 shock_2008 shock_2009 shock_2010 shock_2011 
+
+// Restricting sample to people who were between 12 and 24 years of age in 2008
+drop if age_2008 == .
+
+
+
+// Generating dummry for whether the municipality experienced a shock
+gen violence_level = 1 if violence_level_a > 0
+replace violence_level = 0 if violence_level == .
+
+gen migration_var = 1 if migration == "Yes"
+replace migration_var = 0 if migration == "No"
+
+gen literacy = 1 if lit == 2
+replace literacy = 0 if lit == 1
+
+
+// Setting up fixed effects
+xtset geo2_mx2015
+char age_2008[omit] 24
+
+char enroll_2004[omit]0
+char enroll_2005[omit]0
+char enroll_2006[omit]0
+char enroll_2007[omit]0
+char enroll_2008[omit]0
+char enroll_2009[omit]0
+char enroll_2010[omit]0
+char enroll_2011[omit]0
+
+
+
+				*=== GENERATING SUMMARY STATISTICS ====*
+
+// Basic summary statistics			
+estpost tabstat yrschool literacy sex incearn urban sizemx age indig mrate_2004 mrate_2005 mrate_2006 mrate_2007 mrate_2008 mrate_2009 mrate_2010 mrate_2011 mrate_2012 shock_2005 shock_2006 shock_2007 shock_2008 shock_2009 shock_2010 shock_2011 shock_2012 violence_level, listwise statistics(mean, sd, min, max) columns(statistics)
+
+
+// Summary statistics by whether the municipality experienced a shock			
+estpost tabstat yrschool literacy sex incearn urban sizemx age indig mrate_2004 mrate_2005 mrate_2006 mrate_2007 mrate_2008 mrate_2009 mrate_2010 mrate_2011 mrate_2012 shock_2005 shock_2006 shock_2007 shock_2008 shock_2009 shock_2010 shock_2011 shock_2012, listwise statistics(mean, sd, min, max) columns(statistics) by(violence_level)
+
+
+					
+					
+					*===== MAIN REGRESSIONS =====*
+// Regression using murder rate level						
+xtreg yrschool i.enroll_2004#c.mrate_2004 i.enroll_2005#c.mrate_2005 i.enroll_2006#c.mrate_2006 i.enroll_2007#c.mrate_2007 i.enroll_2008#c.mrate_2008 i.enroll_2009#c.mrate_2009 i.enroll_2010#c.mrate_2010 i.enroll_2011#c.mrate_2011 $controls $mrate i.age, fe cluster(geo2_mx2015)
+estimates store mainreg1
+
+// Regression using change in murder rate
+xtreg yrschool i.enroll_2005#c.dmrate_2005 i.enroll_2006#c.dmrate_2006 i.enroll_2007#c.dmrate_2007 i.enroll_2008#c.dmrate_2008 i.enroll_2009#c.dmrate_2009 i.enroll_2010#c.dmrate_2010 i.enroll_2011#c.dmrate_2011 $controls $dmrate i.age, fe cluster(geo2_mx2015)
+estimates store mainreg2
+
+// Regression using dummies for shocks
+xtreg yrschool i.enroll_2005#i.shock_2005 i.enroll_2006#i.shock_2006 i.enroll_2007#i.shock_2007 i.enroll_2008#i.shock_2008 i.enroll_2009#i.shock_2009 i.enroll_2010#i.shock_2010 i.enroll_2011#i.shock_2011 $controls $shock i.age, fe cluster(geo2_mx2015)
+estimates store mainreg3
+
+esttab mainreg1 mainreg2 mainreg3 using main_regressions.csv
+esttab mainreg1 mainreg2 mainreg3 using main_regressions.tex
+
+
+
+
+				*====== MAIN REGRESSIONS -- CONTINUOUS ======*
+						
+						
+						*=== MODEL #1 ===*
+// Regression w. annual municipality murder rates (CONTROLS)
+xtreg yrschool i.age_2008 c.mrate_2004#i.age_2008 c.mrate_2005#i.age_2008 c.mrate_2006#i.age_2008 c.mrate_2007#i.age_2008 c.mrate_2008#i.age_2008 c.mrate_2009#i.age_2008 c.mrate_2010#i.age_2008 c.mrate_2011#i.age_2008 c.mrate_2012#i.age_2008 $controls, fe cluster(geo2_mx2015)
+estimates store model1c
+
+// Regression w. annual municipality murder rates (CONTROLS -- RESTRICTED YEARS)
+xtreg yrschool i.age_2008 c.mrate_2006#i.age_2008 c.mrate_2007#i.age_2008 c.mrate_2008#i.age_2008 c.mrate_2009#i.age_2008 c.mrate_2010#i.age_2008 $controls, fe cluster(geo2_mx2015)
+estimates store model1cr
+
+
+						*=== MODEL #2 ===*
+// Regression w. change in municipalilty murder rate(CONTROLS)
+xtreg yrschool i.age_2008 c.dmrate_2005#i.age_2008 c.dmrate_2006#i.age_2008 c.dmrate_2007#i.age_2008 c.dmrate_2008#i.age_2008 c.dmrate_2009#i.age_2008 c.dmrate_2010#i.age_2008 c.dmrate_2011#i.age_2008 c.dmrate_2012#i.age_2008 $controls, fe cluster(geo2_mx2015)
+estimates store model2c
+
+// Regression w. change in municipalilty murder rate(CONTROLS -- RESTRICTED YEARS)
+xtreg yrschool i.age_2008 c.dmrate_2006#i.age_2008 c.dmrate_2007#i.age_2008 c.dmrate_2008#i.age_2008 c.dmrate_2009#i.age_2008 c.dmrate_2010#i.age_2008 $controls, fe cluster(geo2_mx2015)
+estimates store model2cr
+						
+						
+esttab model1c model1cr model2c model2cr using main_cont_outputs.csv
+esttab model1c model1cr model2c model2cr using main_cont_outputs.tex
+
+						
+
+			
+				*===== MAIN REGRESSIONS -- DUMMIES =====*
+
+							
+							*=== Model #3 ===*
+// Regression w. dummies for shocks to municipality murder rates above 15 (CONTROLS)
+xtreg yrschool i.age_2008 i.age_2008#i.shock_2005 i.age_2008#i.shock_2006 i.age_2008#i.shock_2007 i.age_2008#i.shock_2008 i.age_2008#i.shock_2009 i.age_2008#i.shock_2010 i.age_2008#i.shock_2011 i.age_2008#i.shock_2012 $controls, fe cluster(geo2_mx2015)
+estimates store model3d
+
+// Regression w. dummies for shocks to municipality murder rates above 15 (CONTROLS -- RESTRICTED YEARS)
+xtreg yrschool i.age_2008 i.shock_2006#i.age_2008 i.age_2008#i.shock_2007 i.age_2008#i.shock_2008 i.age_2008#i.shock_2009 i.age_2008#i.shock_2010 $controls, fe cluster(geo2_mx2015)
+estimates store model3dr
+
+							
+							*=== Model #4 ===*
+// Regression w. dummies for shocks to municipality murder rates above 20 (CONTROLS)
+xtreg yrschool i.age_2008 i.age_2008#i.mshock_2005 i.age_2008#i.mshock_2006 i.age_2008#i.mshock_2007 i.age_2008#i.mshock_2008 i.age_2008#i.mshock_2009 i.age_2008#i.mshock_2010 i.age_2008#i.mshock_2011 i.age_2008#i.mshock_2012 $controls, fe cluster(geo2_mx2015)
+estimates store model4d
+
+// Regression w. dummies for shocks to municipality murder rates above 20 (CONTROLS -- RESTRICTED YEARS)
+xtreg yrschool i.age_2008 i.age_2008#i.mshock_2006 i.age_2008#i.mshock_2007 i.age_2008#i.mshock_2008 i.age_2008#i.mshock_2009 i.age_2008#i.mshock_2010 $controls, fe cluster(geo2_mx2015)
+estimates store model4dr
+
+
+							*=== MODEL #5 ===*
+// Regression w. dummies for shocks to municipality murder rates above 30 (CONTROLS)
+xtreg yrschool i.age_2008 i.age_2008#i.lshock_2005 i.age_2008#i.lshock_2006 i.age_2008#i.lshock_2007 i.age_2008#i.lshock_2008 i.age_2008#i.lshock_2009 i.age_2008#i.lshock_2010 i.age_2008#i.lshock_2011 i.age_2008#i.lshock_2012 $controls, fe cluster(geo2_mx2015)
+estimates store model5d
+
+// Regression w. dummies for shocks to municipality murder rates above 30 (CONTROLS -- RESTRICTED YEARS)
+xtreg yrschool i.age_2008 i.lshock_2006#i.age_2008 i.age_2008#i.lshock_2007 i.age_2008#i.lshock_2008 i.age_2008#i.lshock_2009 i.age_2008#i.lshock_2010 $controls, fe cluster(geo2_mx2015)
+estimates store model5dr
+	
+	
+							*=== MODEL #6 ===*
+// Regression w. dummies for shocks to municipality murder rates above 40 (CONTROLS)
+xtreg yrschool i.age_2008 i.age_2008#i.pshock_2005 i.age_2008#i.pshock_2006 i.age_2008#i.pshock_2007 i.age_2008#i.pshock_2008 i.age_2008#i.pshock_2009 i.age_2008#i.pshock_2010 i.age_2008#i.pshock_2011 i.age_2008#i.pshock_2012 $controls, fe cluster(geo2_mx2015)
+estimates store model6d
+
+// Regression w. dummies for shocks to municipality murder rates above 40 (CONTROLS -- RESTRICTED YEARS)
+xtreg yrschool i.age_2008 i.age_2008#i.pshock_2006 i.age_2008#i.pshock_2007 i.age_2008#i.pshock_2008 i.age_2008#i.pshock_2009 i.age_2008#i.pshock_2010 $controls, fe cluster(geo2_mx2015)
+estimates store model6dr
+
+
+esttab model3d model3dr model4d model4dr model5d model5dr model6d model6dr using main_dum_output.csv
+esttab model3d model3dr model4d model4dr model5d model5dr model6d model6dr using main_dum_output.tex
+			
+			
+			
+				*===== ROBUSTNESS TESTS -- CONTINUOUS ======*
+
+// Regression w. annual municipality murder rates (no controls, no FEs)
+reg yrschool c.dmrate_2005#i.age_2008 c.dmrate_2006#i.age_2008 c.dmrate_2007#i.age_2008 c.dmrate_2008#i.age_2008 c.dmrate_2009#i.age_2008 c.dmrate_2010#i.age_2008 c.dmrate_2011#i.age_2008 c.dmrate_2012#i.age_2008 c.dmrate_2013#i.age_2008 c.dmrate_2014#i.age_2008, cluster(geo2_mx2015)
+estimates store rbtest1
+
+// Regression w. annual municipality murder rates (controls, no FEs)
+reg yrschool c.dmrate_2005#i.age_2008 c.dmrate_2006#i.age_2008 c.dmrate_2007#i.age_2008 c.dmrate_2008#i.age_2008 c.dmrate_2009#i.age_2008 c.dmrate_2010#i.age_2008 c.dmrate_2011#i.age_2008 c.dmrate_2012#i.age_2008 c.dmrate_2013#i.age_2008 c.dmrate_2014#i.age_2008 $controls, cluster(geo2_mx2015)
+estimates store rbtest2
+
+// Regression w. annual municipality murder rates (controls, age FEs)
+reg yrschool i.age_2008 c.dmrate_2005#i.age_2008 c.dmrate_2006#i.age_2008 c.dmrate_2007#i.age_2008 c.dmrate_2008#i.age_2008 c.dmrate_2009#i.age_2008 c.dmrate_2010#i.age_2008 c.dmrate_2011#i.age_2008 c.dmrate_2012#i.age_2008 c.dmrate_2013#i.age_2008 c.dmrate_2014#i.age_2008 $controls, cluster(geo2_mx2015)
+estimates store rbtest3
+
+// Running regression w. annual municipality murder rate (no controls, age & municipality FEs) 
+xtreg yrschool i.age_2008 c.dmrate_2005#i.age_2008 c.dmrate_2006#i.age_2008 c.dmrate_2007#i.age_2008 c.dmrate_2008#i.age_2008 c.dmrate_2009#i.age_2008 c.dmrate_2010#i.age_2008 c.dmrate_2011#i.age_2008 c.dmrate_2012#i.age_2008 c.dmrate_2013#i.age_2008 c.dmrate_2014#i.age_2008, fe cluster(geo2_mx2015)
+estimates store rbtest4
+
+// Regression w. annual municipality murder rate (controls, age & municipality FEs)
+xtreg yrschool i.age_2008 c.dmrate_2005#i.age_2008 c.dmrate_2006#i.age_2008 c.dmrate_2007#i.age_2008 c.dmrate_2008#i.age_2008 c.dmrate_2009#i.age_2008 c.dmrate_2010#i.age_2008 c.dmrate_2011#i.age_2008 c.dmrate_2012#i.age_2008 c.dmrate_2013#i.age_2008 c.dmrate_2014#i.age_2008 $controls, fe cluster(geo2_mx2015)
+estimates store rbtest5
+
+esttab rbtest1 rbtest2 rbtest3 rbtest4 using rb_test_1.csv
+esttab rbtest1 rbtest2 rbtest3 rbtest4 using rb_test_1.tex
+
+
+
+				*===== ROBUSTNESS TESTS -- DUMMIES ======*
+
+
+// Regression w. above 20 murder increase dummies (no controls, no FEs)
+reg yrschool i.age_2008#i.mshock_2005 i.age_2008#i.mshock_2006 i.age_2008#i.mshock_2007 i.age_2008#i.mshock_2008 i.age_2008#i.mshock_2009 i.age_2008#i.mshock_2010 i.age_2008#i.mshock_2011 i.age_2008#i.mshock_2012, cluster(geo2_mx2015)
+estimates store rbtest6
+
+// Regression w. above 20 murder increase dummies (controls, no FEs)
+reg yrschool i.age_2008#i.mshock_2005 i.age_2008#i.mshock_2006 i.age_2008#i.mshock_2007 i.age_2008#i.mshock_2008 i.age_2008#i.mshock_2009 i.age_2008#i.mshock_2010 i.age_2008#i.mshock_2011 i.age_2008#i.mshock_2012 $controls, cluster(geo2_mx2015)
+estimates store rbtest7
+
+// Regression w. above 20 murder increase dummies (controls, age FEs)
+reg yrschool i.age_2008 i.age_2008#i.mshock_2005 i.age_2008#i.mshock_2006 i.age_2008#i.mshock_2007 i.age_2008#i.mshock_2008 i.age_2008#i.mshock_2009 i.age_2008#i.mshock_2010 i.age_2008#i.mshock_2011 i.age_2008#i.mshock_2012 $controls, cluster(geo2_mx2015)
+estimates store rbtest8
+
+// Regression w. above 20 murder increase dummies (no controls, age and municipality FEs)
+xtreg yrschool i.age_2008 i.age_2008#i.mshock_2005 i.age_2008#i.mshock_2006 i.age_2008#i.mshock_2007 i.age_2008#i.mshock_2008 i.age_2008#i.mshock_2009 i.age_2008#i.mshock_2010 i.age_2008#i.mshock_2011 i.age_2008#i.mshock_2012, fe cluster(geo2_mx2015)
+estimates store rbtest9
+
+// Regression w. above 20 murder increase dummies (controls, age and municipality FEs)
+xtreg yrschool i.age_2008 i.age_2008#i.mshock_2005 i.age_2008#i.mshock_2006 i.age_2008#i.mshock_2007 i.age_2008#i.mshock_2008 i.age_2008#i.mshock_2009 i.age_2008#i.mshock_2010 i.age_2008#i.mshock_2011 i.age_2008#i.mshock_2012 $controls, fe cluster(geo2_mx2015)
+estimates store rbtest10
+
+
+esttab rbtest6 rbtest7 rbtest8 rbtest9 rbtest10 using rb_test_2.csv
+esttab rbtest6 rbtest7 rbtest8 rbtest9 rbtest10 using rb_test_2.tex
+
+
+
+
+
+		*==== ROBUSTNESS TEST -- DROPPING LOW POPULATIONS =====*
+		
+
+// Loading dataset
+use "master_data_updated.dta", clear
+
+
+			*====== SETTING UP VARIABLES... =======*
+
+
+// Generating murder rates
+gen mrate_2004 = (murders_2004/pop_2004)*100000
+gen mrate_2005 = (murders_2005/pop_2005)*100000
+gen mrate_2006 = (murders_2006/pop_2006)*100000
+gen mrate_2007 = (murders_2007/pop_2007)*100000
+gen mrate_2008 = (murders_2008/pop_2008)*100000
+gen mrate_2009 = (murders_2009/pop_2009)*100000
+gen mrate_2010 = (murders_2010/pop_2010)*100000
+gen mrate_2011 = (murders_2011/pop_2011)*100000
+gen mrate_2012 = (murders_2012/pop_2012)*100000
+gen mrate_2013 = (murders_2013/pop_2013)*100000
+gen mrate_2014 = (murders_2014/pop_2014)*100000
+
+
+// Generating firearm murder rates (per 100,000)
+gen fmrate_2004 = (fmurders_2004/pop_2004)*100000
+gen fmrate_2005 = (fmurders_2005/pop_2005)*100000
+gen fmrate_2006 = (fmurders_2006/pop_2006)*100000
+gen fmrate_2007 = (fmurders_2007/pop_2007)*100000
+gen fmrate_2008 = (fmurders_2008/pop_2008)*100000
+gen fmrate_2009 = (fmurders_2009/pop_2009)*100000
+gen fmrate_2010 = (fmurders_2010/pop_2010)*100000
+gen fmrate_2011 = (fmurders_2011/pop_2011)*100000
+gen fmrate_2012 = (fmurders_2012/pop_2012)*100000
+gen fmrate_2013 = (fmurders_2013/pop_2013)*100000
+gen fmrate_2014 = (fmurders_2014/pop_2014)*100000
+
+
+// Generating dummies for increase in murder rates
+gen dmrate_2005 = mrate_2005 - mrate_2004
+gen dmrate_2006 = mrate_2006 - mrate_2005
+gen dmrate_2007 = mrate_2007 - mrate_2006
+gen dmrate_2008 = mrate_2008 - mrate_2007
+gen dmrate_2009 = mrate_2009 - mrate_2008
+gen dmrate_2010 = mrate_2010 - mrate_2009
+gen dmrate_2011 = mrate_2011 - mrate_2010
+gen dmrate_2012 = mrate_2012 - mrate_2011
+gen dmrate_2013 = mrate_2013 - mrate_2012
+gen dmrate_2014 = mrate_2014 - mrate_2013
+
+
+// Generating dummy for increases in murder rate of over 15
+gen shock_2005 = 1 if (mrate_2005)-(mrate_2004) > 15
+replace shock_2005 = 0 if shock_2005 == .
+gen shock_2006 = 1 if (mrate_2006)-(mrate_2005) > 15
+replace shock_2006 = 0 if shock_2006 == .
+gen shock_2007 = 1 if (mrate_2007)-(mrate_2006) > 15
+replace shock_2007 = 0 if shock_2007 == .
+gen shock_2008 = 1 if (mrate_2008)-(mrate_2007) > 15
+replace shock_2008 = 0 if shock_2008 == .
+gen shock_2009 = 1 if (mrate_2009)-(mrate_2008) > 15
+replace shock_2009 = 0 if shock_2009 == .
+gen shock_2010 = 1 if (mrate_2010)-(mrate_2009) > 15
+replace shock_2010 = 0 if shock_2010 == .
+gen shock_2011 = 1 if (mrate_2011)-(mrate_2010) > 15
+replace shock_2011 = 0 if shock_2011 == .
+gen shock_2012 = 1 if (mrate_2012)-(mrate_2011) > 15
+replace shock_2012 = 0 if shock_2012 == .
+gen shock_2013 = 1 if (mrate_2013)-(mrate_2012) > 15
+replace shock_2013 = 0 if shock_2013 == .
+gen shock_2014 = 1 if (mrate_2014)-(mrate_2013) > 15
+replace shock_2014 = 0 if shock_2014 == .
+
+
+// Generating dummy for increases in murder rate of over 20
+gen mshock_2005 = 1 if (mrate_2005)-(mrate_2004) > 20
+replace mshock_2005 = 0 if mshock_2005 == .
+gen mshock_2006 = 1 if (mrate_2006)-(mrate_2005) > 20
+replace mshock_2006 = 0 if mshock_2006 == .
+gen mshock_2007 = 1 if (mrate_2007)-(mrate_2006) > 20
+replace mshock_2007 = 0 if mshock_2007 == .
+gen mshock_2008 = 1 if (mrate_2008)-(mrate_2007) > 20
+replace mshock_2008 = 0 if mshock_2008 == .
+gen mshock_2009 = 1 if (mrate_2009)-(mrate_2008) > 20
+replace mshock_2009 = 0 if mshock_2009 == .
+gen mshock_2010 = 1 if (mrate_2010)-(mrate_2009) > 20
+replace mshock_2010 = 0 if mshock_2010 == .
+gen mshock_2011 = 1 if (mrate_2011)-(mrate_2010) > 20
+replace mshock_2011 = 0 if mshock_2011 == .
+gen mshock_2012 = 1 if (mrate_2012)-(mrate_2011) > 20
+replace mshock_2012 = 0 if mshock_2012 == .
+gen mshock_2013 = 1 if (mrate_2013)-(mrate_2012) > 20
+replace mshock_2013 = 0 if mshock_2013 == .
+gen mshock_2014 = 1 if (mrate_2014)-(mrate_2013) > 20
+replace mshock_2014 = 0 if mshock_2014 == .
+
+
+// Generating dummy for increases in the murder rate of over 30
+gen lshock_2005 = 1 if (mrate_2005)-(mrate_2004) > 30
+replace lshock_2005 = 0 if lshock_2005 == .
+gen lshock_2006 = 1 if (mrate_2006)-(mrate_2005) > 30
+replace lshock_2006 = 0 if lshock_2006 == .
+gen lshock_2007 = 1 if (mrate_2007)-(mrate_2006) > 30
+replace lshock_2007 = 0 if lshock_2007 == .
+gen lshock_2008 = 1 if (mrate_2008)-(mrate_2007) > 30
+replace lshock_2008 = 0 if lshock_2008 == .
+gen lshock_2009 = 1 if (mrate_2009)-(mrate_2008) > 30
+replace lshock_2009 = 0 if lshock_2009 == .
+gen lshock_2010 = 1 if (mrate_2010)-(mrate_2009) > 30
+replace lshock_2010 = 0 if lshock_2010 == .
+gen lshock_2011 = 1 if (mrate_2011)-(mrate_2010) > 30
+replace lshock_2011 = 0 if lshock_2011 == .
+gen lshock_2012 = 1 if (mrate_2012)-(mrate_2011) > 30
+replace lshock_2012 = 0 if lshock_2012 == .
+gen lshock_2013 = 1 if (mrate_2013)-(mrate_2012) > 30
+replace lshock_2013 = 0 if lshock_2013 == .
+gen lshock_2014 = 1 if (mrate_2014)-(mrate_2013) > 30
+replace lshock_2014 = 0 if lshock_2014 == .
+
+
+// Generating dummy for increases in murder rate of over 40
+gen pshock_2005 = 1 if (mrate_2005)-(mrate_2004) > 40
+replace pshock_2005 = 0 if pshock_2005 == .
+gen pshock_2006 = 1 if (mrate_2006)-(mrate_2005) > 40
+replace pshock_2006 = 0 if pshock_2006 == .
+gen pshock_2007 = 1 if (mrate_2007)-(mrate_2006) > 40
+replace pshock_2007 = 0 if pshock_2007 == .
+gen pshock_2008 = 1 if (mrate_2008)-(mrate_2007) > 40
+replace pshock_2008 = 0 if pshock_2008 == .
+gen pshock_2009 = 1 if (mrate_2009)-(mrate_2008) > 40
+replace pshock_2009 = 0 if pshock_2009 == .
+gen pshock_2010 = 1 if (mrate_2010)-(mrate_2009) > 40
+replace pshock_2010 = 0 if pshock_2010 == .
+gen pshock_2011 = 1 if (mrate_2011)-(mrate_2010) > 40
+replace pshock_2011 = 0 if pshock_2011 == .
+gen pshock_2012 = 1 if (mrate_2012)-(mrate_2011) > 40
+replace pshock_2012 = 0 if pshock_2012 == .
+gen pshock_2013 = 1 if (mrate_2013)-(mrate_2012) > 40
+replace pshock_2013 = 0 if pshock_2013 == .
+gen pshock_2014 = 1 if (mrate_2014)-(mrate_2013) > 40
+replace pshock_2014 = 0 if pshock_2014 == .
+
+
+// Generating dummies for whether an individual was enrolled in each year
+gen enroll_2004 = 1 if age>25 & age<30
+replace enroll_2004 = 0 if enroll_2004 == .
+gen enroll_2005 = 1 if age>24 & age<29
+replace enroll_2005 = 0 if enroll_2005 == .
+gen enroll_2006 = 1 if age>23 & age<28
+replace enroll_2006 = 0 if enroll_2006 == .
+gen enroll_2007 = 1 if age>22 & age<27
+replace enroll_2007 = 0 if enroll_2007 == .
+gen enroll_2008 = 1 if age>21 & age<26
+replace enroll_2008 = 0 if enroll_2008 == .
+gen enroll_2009 = 1 if age>20 & age<25
+replace enroll_2009 = 0 if enroll_2009 == .
+gen enroll_2010 = 1 if age>19 & age<24
+replace enroll_2010 = 0 if enroll_2010 == .
+gen enroll_2011 = 1 if age>18 & age<23
+replace enroll_2011 = 0 if enroll_2011 == .
+
+
+
+	*===== CREATING DUMMIES FOR AGE IN EACH YEAR OF INTEREST =======*
+
+gen age_2008 = age-7
+replace age_2008 = . if age_2008>24 | age<12
+
+
+	*===== SETTING UP CONTROLS FOR MIGRATION AND OTHER DEMOGRAPHICS =====*
+
+// Creating a dummy for migration
+gen migration = "No" if bplmx == geo1_mx2015
+replace migration = "Yes" if bplmx != geo1_mx2015
+
+// Restricting sample to those born in Mexico with Mexican citizenship who did not migrate
+keep if bplcountry == 22060
+keep if citizen == 1
+drop if migration == "Yes"
+drop if yrschool >20
+
+
+// Creating macro of demographic controls & treatments 
+global controls urban sex indig sizemx
+global mrate mrate_2004 mrate_2005 mrate_2006 mrate_2007 mrate_2008 mrate_2009 mrate_2010 mrate_2011 mrate_2012
+global dmrate dmrate_2005 dmrate_2006 dmrate_2007 dmrate_2008 dmrate_2009 dmrate_2010 dmrate_2011 dmrate_2012
+global shock shock_2005 shock_2006 shock_2007 shock_2008 shock_2009 shock_2010 shock_2011 
+
+// Restricting sample to people who were between 12 and 24 years of age in 2008
+drop if age_2008 == .
+
+// Generating dummry for whether the municipality experienced a shock
+gen violence_level = 1 if violence_level_a > 0
+replace violence_level = 0 if violence_level == .
+
+gen migration_var = 1 if migration == "Yes"
+replace migration_var = 0 if migration == "No"
+
+gen literacy = 1 if lit == 2
+replace literacy = 0 if lit == 1
+
+
+// Setting up fixed effects
+xtset geo2_mx2015
+char age_2008[omit] 24
+
+char enroll_2004[omit]0
+char enroll_2005[omit]0
+char enroll_2006[omit]0
+char enroll_2007[omit]0
+char enroll_2008[omit]0
+char enroll_2009[omit]0
+char enroll_2010[omit]0
+char enroll_2011[omit]0
+
+
+
+
+		
+// Restricting sample to municipalities with populations above 10,000
+drop if pop_2004<10000
+drop if pop_2005<10000
+drop if pop_2006<10000
+drop if pop_2007<10000
+drop if pop_2008<10000
+drop if pop_2009<10000
+drop if pop_2010<10000
+drop if pop_2011<10000
+drop if pop_2012<10000
+drop if pop_2013<10000
+drop if pop_2014<10000		
+		
+		
+		
+		
+							*===== RB TESTS MAIN REGRESSIONS =====*
+// Regression using murder rate level						
+xtreg yrschool i.enroll_2004#c.mrate_2004 i.enroll_2005#c.mrate_2005 i.enroll_2006#c.mrate_2006 i.enroll_2007#c.mrate_2007 i.enroll_2008#c.mrate_2008 i.enroll_2009#c.mrate_2009 i.enroll_2010#c.mrate_2010 i.enroll_2011#c.mrate_2011 $controls $mrate i.age, fe cluster(geo2_mx2015)
+estimates store rbmainreg1
+
+// Regression using change in murder rate
+xtreg yrschool i.enroll_2005#c.dmrate_2005 i.enroll_2006#c.dmrate_2006 i.enroll_2007#c.dmrate_2007 i.enroll_2008#c.dmrate_2008 i.enroll_2009#c.dmrate_2009 i.enroll_2010#c.dmrate_2010 i.enroll_2011#c.dmrate_2011 $controls $dmrate i.age, fe cluster(geo2_mx2015)
+estimates store rbmainreg2
+
+// Regression using dummies for shocks
+xtreg yrschool i.enroll_2005#i.shock_2005 i.enroll_2006#i.shock_2006 i.enroll_2007#i.shock_2007 i.enroll_2008#i.shock_2008 i.enroll_2009#i.shock_2009 i.enroll_2010#i.shock_2010 i.enroll_2011#i.shock_2011 $controls $shock i.age, fe cluster(geo2_mx2015)
+estimates store rbmainreg3
+		
+esttab rbmainreg1 rbmainreg2 rbmainreg3 using rbtestmainreg.csv		
+esttab rbmainreg1 rbmainreg2 rbmainreg3 using rbtestmainreg.tex		
+
+		
+		
+		
+				*====== RB TEST MAIN REGRESSIONS -- CONTINUOUS ======*
+						
+						
+							*=== MODEL #1 ===*
+// Regression w. annual municipality murder rates (CONTROLS)
+xtreg yrschool i.age_2008 c.mrate_2004#i.age_2008 c.mrate_2005#i.age_2008 c.mrate_2006#i.age_2008 c.mrate_2007#i.age_2008 c.mrate_2008#i.age_2008 c.mrate_2009#i.age_2008 c.mrate_2010#i.age_2008 c.mrate_2011#i.age_2008 c.mrate_2012#i.age_2008 $controls, fe cluster(geo2_mx2015)
+estimates store rptmodel1
+
+// Regression w. annual municipality murder rates (CONTROLS -- RESTRICTED YEARS)
+xtreg yrschool i.age_2008 c.mrate_2006#i.age_2008 c.mrate_2007#i.age_2008 c.mrate_2008#i.age_2008 c.mrate_2009#i.age_2008 c.mrate_2010#i.age_2008 $controls, fe cluster(geo2_mx2015)
+estimates store rptmodel1r
+
+
+							*=== MODEL #2 ===*
+// Regression w. change in municipalilty murder rate(CONTROLS)
+xtreg yrschool i.age_2008 c.dmrate_2005#i.age_2008 c.dmrate_2006#i.age_2008 c.dmrate_2007#i.age_2008 c.dmrate_2008#i.age_2008 c.dmrate_2009#i.age_2008 c.dmrate_2010#i.age_2008 c.dmrate_2011#i.age_2008 c.dmrate_2012#i.age_2008 $controls, fe cluster(geo2_mx2015)
+estimates store rptmodel2
+
+// Regression w. change in municipalilty murder rate(CONTROLS -- RESTRICTED YEARS)
+xtreg yrschool i.age_2008 c.dmrate_2006#i.age_2008 c.dmrate_2007#i.age_2008 c.dmrate_2008#i.age_2008 c.dmrate_2009#i.age_2008 c.dmrate_2010#i.age_2008 $controls, fe cluster(geo2_mx2015)
+estimates store rptmodel2r
+						
+esttab rptmodel1 rptmodel1r rptmodel2 rptmodel2r using rbtest_pop_cont.csv
+esttab rptmodel1 rptmodel1r rptmodel2 rptmodel2r using rbtest_pop_cont.tex
+
+						
+						
+				*===== RB TEST MAIN REGRESSIONS -- DUMMIES =====*
+
+							
+							*=== Model #3 ===*
+// Regression w. dummies for shocks to municipality murder rates above 15 (CONTROLS)
+xtreg yrschool i.age_2008 i.age_2008#i.shock_2005 i.age_2008#i.shock_2006 i.age_2008#i.shock_2007 i.age_2008#i.shock_2008 i.age_2008#i.shock_2009 i.age_2008#i.shock_2010 i.age_2008#i.shock_2011 i.age_2008#i.shock_2012 $controls, fe cluster(geo2_mx2015)
+estimates store rptmodel3
+
+// Regression w. dummies for shocks to municipality murder rates above 15 (CONTROLS -- RESTRICTED YEARS)
+xtreg yrschool i.age_2008 i.shock_2006#i.age_2008 i.age_2008#i.shock_2007 i.age_2008#i.shock_2008 i.age_2008#i.shock_2009 i.age_2008#i.shock_2010 $controls, fe cluster(geo2_mx2015)
+estimates store rptmodel3r
+
+							
+							
+							*=== Model #4 ===*
+// Regression w. dummies for shocks to municipality murder rates above 20 (CONTROLS)
+xtreg yrschool i.age_2008 i.age_2008#i.mshock_2005 i.age_2008#i.mshock_2006 i.age_2008#i.mshock_2007 i.age_2008#i.mshock_2008 i.age_2008#i.mshock_2009 i.age_2008#i.mshock_2010 i.age_2008#i.mshock_2011 i.age_2008#i.mshock_2012 $controls, fe cluster(geo2_mx2015)
+estimates store rptmodel4
+
+// Regression w. dummies for shocks to municipality murder rates above 20 (CONTROLS -- RESTRICTED YEARS)
+xtreg yrschool i.age_2008 i.age_2008#i.mshock_2006 i.age_2008#i.mshock_2007 i.age_2008#i.mshock_2008 i.age_2008#i.mshock_2009 i.age_2008#i.mshock_2010 $controls, fe cluster(geo2_mx2015)
+estimates store rptmodel4r
+
+
+
+							*=== MODEL #5 ===*
+// Regression w. dummies for shocks to municipality murder rates above 30 (CONTROLS)
+xtreg yrschool i.age_2008 i.age_2008#i.lshock_2005 i.age_2008#i.lshock_2006 i.age_2008#i.lshock_2007 i.age_2008#i.lshock_2008 i.age_2008#i.lshock_2009 i.age_2008#i.lshock_2010 i.age_2008#i.lshock_2011 i.age_2008#i.lshock_2012 $controls, fe cluster(geo2_mx2015)
+estimates store rptmodel5
+
+// Regression w. dummies for shocks to municipality murder rates above 30 (CONTROLS -- RESTRICTED YEARS)
+xtreg yrschool i.age_2008 i.lshock_2006#i.age_2008 i.age_2008#i.lshock_2007 i.age_2008#i.lshock_2008 i.age_2008#i.lshock_2009 i.age_2008#i.lshock_2010 $controls, fe cluster(geo2_mx2015)
+estimates store rptmodel5r
+
+	
+	
+							*=== MODEL #6 ===*
+// Regression w. dummies for shocks to municipality murder rates above 40 (CONTROLS)
+xtreg yrschool i.age_2008 i.age_2008#i.pshock_2005 i.age_2008#i.pshock_2006 i.age_2008#i.pshock_2007 i.age_2008#i.pshock_2008 i.age_2008#i.pshock_2009 i.age_2008#i.pshock_2010 i.age_2008#i.pshock_2011 i.age_2008#i.pshock_2012 $controls, fe cluster(geo2_mx2015)
+estimates store rptmodel6
+
+// Regression w. dummies for shocks to municipality murder rates above 40 (CONTROLS -- RESTRICTED YEARS)
+xtreg yrschool i.age_2008 i.age_2008#i.pshock_2006 i.age_2008#i.pshock_2007 i.age_2008#i.pshock_2008 i.age_2008#i.pshock_2009 i.age_2008#i.pshock_2010 $controls, fe cluster(geo2_mx2015)
+estimates store rptmodel6r
+
+
+esttab rptmodel3 rptmodel3r rptmodel4 rptmodel4r rptmodel5 rptmodel5r rptmodel6 rptmodel6r using rb_test_pop_dum.csv
+esttab rptmodel3 rptmodel3r rptmodel4 rptmodel4r rptmodel5 rptmodel5r rptmodel6 rptmodel6r using rb_test_pop_dum.tex
+
+
+								*=== END ===*
+
+
+								
+								
+								
+							
+								
+								
+								
+								

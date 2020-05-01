@@ -1,0 +1,578 @@
+
+// Setting up everything
+clear all
+set more off
+
+cd "K:\Jordan Imahori\ECO439"
+
+log close _all
+log using "ECO439_dataprep.log", replace
+
+
+
+
+/* This do-file will allow you to reproduce my dataset. The microdata on murders was 
+originally formatted as an RData file, which I used the "foreign" package in R to 
+convert to a .dta. The population estimates were from a CSV. You can find all of 
+the data at (https://github.com/diegovalle), where it is compiled from data 
+available from INEGI and CONAPO. The original data is also included in the zip file. */
+
+
+
+
+
+	*====== CLEANING UP ANNUAL POPULATION ESTIMATES / PROJECTIONS ========*
+	
+// Loading yearly population estimates by municipality from CONAPO
+import delimited "K:\Jordan Imahori\ECO439\municipio_population1990_2030.csv", clear
+
+// Resticting the sample to the years I'm interested in
+drop if year>2014 | year<2004
+
+// Renaming municipality codes for consistency with census data
+rename code geo2_mx2015
+
+// Dropping sex-specific population estimates
+drop if sex == "Females" 
+drop if sex == "Males"
+drop sex
+
+// Creating variables for population in each year
+bysort geo2_mx2015: gen pop_2004 = population if year == 2004
+bysort geo2_mx2015: gen pop_2005 = population if year == 2005		
+bysort geo2_mx2015: gen pop_2006 = population if year == 2006
+bysort geo2_mx2015: gen pop_2007 = population if year == 2007
+bysort geo2_mx2015: gen pop_2008 = population if year == 2008
+bysort geo2_mx2015: gen pop_2009 = population if year == 2009
+bysort geo2_mx2015: gen pop_2010 = population if year == 2010
+bysort geo2_mx2015: gen pop_2011 = population if year == 2011
+bysort geo2_mx2015: gen pop_2012 = population if year == 2012
+bysort geo2_mx2015: gen pop_2013 = population if year == 2013
+bysort geo2_mx2015: gen pop_2014 = population if year == 2014
+
+
+
+bysort geo2_mx2015: replace pop_2004 = pop_2004[_n-1] if pop_2004 ==.
+bysort geo2_mx2015: replace pop_2005 = pop_2005[_n-1] if pop_2005 ==.
+bysort geo2_mx2015: replace pop_2006 = pop_2006[_n-1] if pop_2006 ==.
+bysort geo2_mx2015: replace pop_2007 = pop_2007[_n-1] if pop_2007 ==.
+bysort geo2_mx2015: replace pop_2008 = pop_2008[_n-1] if pop_2008 ==.
+bysort geo2_mx2015: replace pop_2009 = pop_2009[_n-1] if pop_2009 ==.
+bysort geo2_mx2015: replace pop_2010 = pop_2010[_n-1] if pop_2010 ==.
+bysort geo2_mx2015: replace pop_2011 = pop_2011[_n-1] if pop_2011 ==.
+bysort geo2_mx2015: replace pop_2012 = pop_2012[_n-1] if pop_2012 ==.
+bysort geo2_mx2015: replace pop_2013 = pop_2013[_n-1] if pop_2013 ==.
+bysort geo2_mx2015: replace pop_2014 = pop_2014[_n-1] if pop_2014 ==.
+
+
+
+
+// Dropping repeated values
+bysort geo2_mx2015: gen count1 = _n
+bysort geo2_mx2015: gen count2 = _N
+keep if count1 == count2
+
+// Dropping unnecessary variables
+drop year population count1 count2
+
+save "population_estimates.dta", replace
+
+
+
+
+
+
+	*====== CALCULATING HOMICIDE RATE BY MUNICIPALITY(ALL TYPES) ======*
+	
+// Loading microdata on murders in Mexico from INEGI	
+use "injury_intent.dta", clear
+
+// Cleaning up data
+drop if year_occur == "NA"
+destring year_occur, replace
+drop if year_occur>2014 | year_occur<2004
+
+
+// Creating variable for municipality / state codes in the same form as the census dataset
+generate geo2_mx2015 = state_reg*1000 + mun_reg
+
+
+// Restricting deaths to those likely to be associated with drug violence
+keep if intent == "Homicide" 
+drop if domestic_violence == "Yes"
+
+
+// Creating variable for # of murders by municipality & year
+bysort geo2_mx2015: egen murders_2004 = count(intent) if year_occur == 2004
+bysort geo2_mx2015: egen murders_2005 = count(intent) if year_occur == 2005
+bysort geo2_mx2015: egen murders_2006 = count(intent) if year_occur == 2006
+bysort geo2_mx2015: egen murders_2007 = count(intent) if year_occur == 2007
+bysort geo2_mx2015: egen murders_2008 = count(intent) if year_occur == 2008
+bysort geo2_mx2015: egen murders_2009 = count(intent) if year_occur == 2009
+bysort geo2_mx2015: egen murders_2010 = count(intent) if year_occur == 2010
+bysort geo2_mx2015: egen murders_2011 = count(intent) if year_occur == 2011
+bysort geo2_mx2015: egen murders_2012 = count(intent) if year_occur == 2012
+bysort geo2_mx2015: egen murders_2013 = count(intent) if year_occur == 2013
+bysort geo2_mx2015: egen murders_2014 = count(intent) if year_occur == 2014
+
+
+// Checking if the process was successful
+tab intent if geo2_mx2015 == 14067 & year_occur == 2006
+tab murders_2006 if geo2_mx2015 == 14067
+
+
+// Dropping all repeated values
+bysort geo2_mx2015 year_occur: gen count = _n
+keep if count == 1
+
+
+// Moving all values of the variable into a single line
+bysort geo2_mx2015: replace murders_2004 = murders_2004[_n-1] if murders_2004 ==.
+bysort geo2_mx2015: replace murders_2004 = murders_2004[_n+1] if murders_2004 ==.
+
+bysort geo2_mx2015: replace murders_2005 = murders_2005[_n-1] if murders_2005 ==.
+bysort geo2_mx2015: replace murders_2005 = murders_2005[_n+1] if murders_2005 ==.
+
+bysort geo2_mx2015: replace murders_2006 = murders_2006[_n-1] if murders_2006 ==.
+bysort geo2_mx2015: replace murders_2006 = murders_2006[_n+1] if murders_2006 ==.
+
+bysort geo2_mx2015: replace murders_2007 = murders_2007[_n-1] if murders_2007 ==.
+bysort geo2_mx2015: replace murders_2007 = murders_2007[_n+1] if murders_2007 ==.
+
+bysort geo2_mx2015: replace murders_2008 = murders_2008[_n-1] if murders_2008 ==.
+bysort geo2_mx2015: replace murders_2008 = murders_2008[_n+1] if murders_2008 ==.
+
+bysort geo2_mx2015: replace murders_2009 = murders_2009[_n-1] if murders_2009 ==.
+bysort geo2_mx2015: replace murders_2009 = murders_2009[_n+1] if murders_2009 ==.
+
+bysort geo2_mx2015: replace murders_2010 = murders_2010[_n-1] if murders_2010 ==.
+bysort geo2_mx2015: replace murders_2010 = murders_2010[_n+1] if murders_2010 ==.
+
+bysort geo2_mx2015: replace murders_2011 = murders_2011[_n-1] if murders_2011 ==.
+bysort geo2_mx2015: replace murders_2011 = murders_2011[_n+1] if murders_2011 ==.
+
+bysort geo2_mx2015: replace murders_2012 = murders_2012[_n-1] if murders_2012 ==.
+bysort geo2_mx2015: replace murders_2012 = murders_2012[_n+1] if murders_2012 ==.
+
+bysort geo2_mx2015: replace murders_2013 = murders_2013[_n-1] if murders_2013 ==.
+bysort geo2_mx2015: replace murders_2013 = murders_2013[_n+1] if murders_2013 ==.
+
+bysort geo2_mx2015: replace murders_2014 = murders_2014[_n-1] if murders_2014 ==.
+bysort geo2_mx2015: replace murders_2014 = murders_2014[_n+1] if murders_2014 ==.
+
+
+
+// Dropping repeated values
+bysort geo2_mx2015: gen count2 = _n
+bysort geo2_mx2015: gen count3 = _N
+keep if count2 == count3
+
+
+// Replacing missing values with zeros
+replace murders_2004 = 0 if murders_2004 == .
+replace murders_2005 = 0 if murders_2005 == .
+replace murders_2006 = 0 if murders_2006 == .
+replace murders_2007 = 0 if murders_2007 == .
+replace murders_2008 = 0 if murders_2008 == .
+replace murders_2009 = 0 if murders_2009 == .
+replace murders_2010 = 0 if murders_2010 == .
+replace murders_2011 = 0 if murders_2011 == .
+replace murders_2012 = 0 if murders_2012 == .
+replace murders_2013 = 0 if murders_2013 == .
+replace murders_2014 = 0 if murders_2014 == .
+
+
+// Dropping variables that are not needed
+keep geo2_mx2015 murders_2004 murders_2005 murders_2006 murders_2007 murders_2008 murders_2009 murders_2010 murders_2011 murders_2012 murders_2013 murders_2014 
+
+
+save "murders_all.dta", replace
+
+
+
+
+
+
+
+	*===== CALCULATING FIREARM-RELATED HOMICIDE RATE BY MUNICIPALITY =====*
+
+	
+// Loading microdata on murders in Mexico from INEGI	
+use "injury_intent.dta", clear
+
+// Cleaning up data
+drop if year_occur == "NA"
+destring year_occur, replace
+drop if year_occur>2014 | year_occur<2004
+
+// Creating variable for municipality / state codes in the same form as the census dataset
+generate geo2_mx2015 = state_reg*1000 + mun_reg
+
+
+// Restricting deaths to those likely to be associated with drug violence
+keep if intent == "Homicide" 
+keep if mechanism == "Firearm"
+drop if domestic_violence == "Yes"
+
+
+// Creating variable for # of murders by municipality & year
+bysort geo2_mx2015: egen fmurders_2004 = count(intent) if year_occur == 2004
+bysort geo2_mx2015: egen fmurders_2005 = count(intent) if year_occur == 2005
+bysort geo2_mx2015: egen fmurders_2006 = count(intent) if year_occur == 2006
+bysort geo2_mx2015: egen fmurders_2007 = count(intent) if year_occur == 2007
+bysort geo2_mx2015: egen fmurders_2008 = count(intent) if year_occur == 2008
+bysort geo2_mx2015: egen fmurders_2009 = count(intent) if year_occur == 2009
+bysort geo2_mx2015: egen fmurders_2010 = count(intent) if year_occur == 2010
+bysort geo2_mx2015: egen fmurders_2011 = count(intent) if year_occur == 2011
+bysort geo2_mx2015: egen fmurders_2012 = count(intent) if year_occur == 2012
+bysort geo2_mx2015: egen fmurders_2013 = count(intent) if year_occur == 2013
+bysort geo2_mx2015: egen fmurders_2014 = count(intent) if year_occur == 2014
+
+
+
+// Checking if the process was successful
+tab intent if geo2_mx2015 == 14067 & year_occur == 2006
+tab fmurders_2006 if geo2_mx2015 == 14067
+
+
+// Dropping all repeated values
+bysort geo2_mx2015 year_occur: gen count = _n
+keep if count == 1
+
+// Merging all values of the variable into a single line
+bysort geo2_mx2015: replace fmurders_2004 = fmurders_2004[_n-1] if fmurders_2004 ==.
+bysort geo2_mx2015: replace fmurders_2004 = fmurders_2004[_n+1] if fmurders_2004 ==.
+
+bysort geo2_mx2015: replace fmurders_2005 = fmurders_2005[_n-1] if fmurders_2005 ==.
+bysort geo2_mx2015: replace fmurders_2005 = fmurders_2005[_n+1] if fmurders_2005 ==.
+
+bysort geo2_mx2015: replace fmurders_2006 = fmurders_2006[_n-1] if fmurders_2006 ==.
+bysort geo2_mx2015: replace fmurders_2006 = fmurders_2006[_n+1] if fmurders_2006 ==.
+
+bysort geo2_mx2015: replace fmurders_2007 = fmurders_2007[_n-1] if fmurders_2007 ==.
+bysort geo2_mx2015: replace fmurders_2007 = fmurders_2007[_n+1] if fmurders_2007 ==.
+
+bysort geo2_mx2015: replace fmurders_2008 = fmurders_2008[_n-1] if fmurders_2008 ==.
+bysort geo2_mx2015: replace fmurders_2008 = fmurders_2008[_n+1] if fmurders_2008 ==.
+
+bysort geo2_mx2015: replace fmurders_2009 = fmurders_2009[_n-1] if fmurders_2009 ==.
+bysort geo2_mx2015: replace fmurders_2009 = fmurders_2009[_n+1] if fmurders_2009 ==.
+
+bysort geo2_mx2015: replace fmurders_2010 = fmurders_2010[_n-1] if fmurders_2010 ==.
+bysort geo2_mx2015: replace fmurders_2010 = fmurders_2010[_n+1] if fmurders_2010 ==.
+
+bysort geo2_mx2015: replace fmurders_2011 = fmurders_2011[_n-1] if fmurders_2011 ==.
+bysort geo2_mx2015: replace fmurders_2011 = fmurders_2011[_n+1] if fmurders_2011 ==.
+
+bysort geo2_mx2015: replace fmurders_2012 = fmurders_2012[_n-1] if fmurders_2012 ==.
+bysort geo2_mx2015: replace fmurders_2012 = fmurders_2012[_n+1] if fmurders_2012 ==.
+
+bysort geo2_mx2015: replace fmurders_2013 = fmurders_2013[_n-1] if fmurders_2013 ==.
+bysort geo2_mx2015: replace fmurders_2013 = fmurders_2013[_n+1] if fmurders_2013 ==.
+
+bysort geo2_mx2015: replace fmurders_2014 = fmurders_2014[_n-1] if fmurders_2014 ==.
+bysort geo2_mx2015: replace fmurders_2014 = fmurders_2014[_n+1] if fmurders_2014 ==.
+
+
+
+// Dropping repeated values
+bysort geo2_mx2015: gen count2 = _n
+bysort geo2_mx2015: gen count3 = _N
+keep if count2 == count3
+
+
+// Replacing missing values with zeros
+replace fmurders_2004 = 0 if fmurders_2004 == .
+replace fmurders_2005 = 0 if fmurders_2005 == .
+replace fmurders_2006 = 0 if fmurders_2006 == .
+replace fmurders_2007 = 0 if fmurders_2007 == .
+replace fmurders_2008 = 0 if fmurders_2008 == .
+replace fmurders_2009 = 0 if fmurders_2009 == .
+replace fmurders_2010 = 0 if fmurders_2010 == .
+replace fmurders_2011 = 0 if fmurders_2011 == .
+replace fmurders_2012 = 0 if fmurders_2012 == .
+replace fmurders_2013 = 0 if fmurders_2013 == .
+replace fmurders_2014 = 0 if fmurders_2014 == .
+
+
+
+// Dropping variables that are not needed
+keep geo2_mx2015 fmurders_2004 fmurders_2005 fmurders_2006 fmurders_2007 fmurders_2008 fmurders_2009 fmurders_2010 fmurders_2011 fmurders_2012 fmurders_2013 fmurders_2014
+
+
+save "murders_firearm.dta", replace
+
+
+
+
+
+
+		*======= CREATING SINGLE DATASET OF HOMICIDES =======*
+
+// Loading murder rate dataset (all types)
+use "murders_all", clear			
+
+// Merging all-type murder rates with firearm specific rates
+merge 1:1 geo2_mx2015 using "K:\Jordan Imahori\ECO439\murders_firearm.dta"
+drop _merge
+
+// Merging yearly population estimates by municipality from CONAPO
+merge 1:1 geo2_mx2015 using "K:\Jordan Imahori\ECO439\population_estimates.dta"
+keep if _merge == 3
+drop _merge
+
+
+save "murders_combined.dta", replace
+
+
+
+
+
+
+
+				*======= CREATING MATER DATASET =======*
+				
+// Loading 2015 Mexican Census dataset				
+use "ipumsi_00001.dta", clear
+
+// Merging murder rates with census data
+merge m:1 geo2_mx2015 using "murders_combined.dta"
+
+// Dropping individuals living in municipalities where murder rates are unavailable
+drop if _merge == 1
+drop _merge
+
+// Dropping unnecessary variables to make the dataset smaller
+drop country year sample hhwt geolev1 geolev2 geo1_mx geo2_mx
+
+// Restricting sample to those who are old enough to have graduated secondary school by 2014
+drop if age <20 | age>40
+
+save "master_data.dta", replace
+
+				
+				
+				
+				
+				
+				
+	*===== CREATING YEARLY MURDERS BY MUNICIPALITY (FOR GRAPHS)=====*
+								
+// Loading microdata on murders in Mexico from INEGI	
+use "injury_intent.dta", clear
+
+// Cleaning up data
+drop if year_occur == "NA"
+destring year_occur, replace
+drop if year_occur>2017 | year_occur<2004
+
+// Creating variables for state & municipality
+generate geo1_mx2015 = state_reg*1000
+generate geo2_mx2015 = state_reg*1000 + mun_reg
+
+// Restricting deaths to those likely to be associated with drug violence
+keep if intent == "Homicide" 
+drop if domestic_violence == "Yes"		
+								
+// Calculating yearly murders								
+bysort geo2_mx2015 year_occur: egen murders = count(v1)
+
+// Creating variable for year of murders
+gen year = year_occur
+
+// Dropping repeated values
+bysort geo2_mx2015 year: gen count = _n
+keep if count == 1
+
+// Dropping unnecessary variables
+keep geo1_mx2015 geo2_mx2015 murders year 
+
+save "murders_tableau.dta", replace
+				
+				
+				
+				
+				
+				
+	*===== CREATING YEARLY FIREARM MURDERS BY MUNICIPALITY (FOR GRAPHS)=====*
+								
+// Loading microdata on murders in Mexico from INEGI	
+use "injury_intent.dta", clear
+
+// Cleaning up data
+drop if year_occur == "NA"
+destring year_occur, replace
+drop if year_occur>2017 | year_occur<2004
+
+// Creating variables for state & municipality
+generate geo1_mx2015 = state_reg*1000
+generate geo2_mx2015 = state_reg*1000 + mun_reg
+
+// Restricting deaths to those likely to be associated with drug violence
+keep if intent == "Homicide" 
+drop if domestic_violence == "Yes"		
+keep if mechanism == "Firearm"				
+								
+// Calculating yearly murders								
+bysort geo2_mx2015 year_occur: egen firearm_murders = count(intent) if intent == "Homicide"
+
+// Creating variable for year of murders
+gen year = year_occur
+
+// Dropping repeated values
+bysort geo2_mx2015 year: gen count = _n
+keep if count == 1
+
+// Dropping unnecessary variables
+keep geo2_mx2015 firearm_murders year 
+
+save "firearm_murders_tableau.dta", replace
+
+
+
+
+
+
+		*===== CLEANING POPULATION DATA TO MERGE ======*
+
+// Loading yearly population estimates by municipality from CONAPO
+import delimited "K:\Jordan Imahori\ECO439\municipio_population1990_2030.csv", clear
+
+// Resticting the sample to the years I'm interested in
+drop if year>2017 | year<2004
+
+// Renaming municipality codes for consistency with census data
+rename code geo2_mx2015
+
+// Dropping sex-specific population estimates
+drop if sex == "Females" 
+drop if sex == "Males"
+drop sex
+
+save "population_tableau.dta", replace
+
+				
+				
+				
+				
+				
+		*===== CREATING MASTER DATASET FOR GRAPHS ======*
+
+use "population_tableau.dta", clear
+
+merge 1:1 geo2_mx2015 year using "firearm_murders_tableau.dta", nogenerate
+merge 1:1 geo2_mx2015 year using "murders_tableau.dta"
+
+// Replacing missing values
+replace murders = 0 if murders == .
+replace firearm_murders = 0 if firearm_murders == .
+
+
+// Creating variable for yearly murder rate (per 100,000)
+gen murder_rate = (murders/population)*100000
+gen firearm_murder_rate = (firearm_murders/population)*100000
+gen share_firearm_murders = (firearm_murders/murders)*100	
+
+
+// Creating dummies for spikes in violence
+sort geo2_mx2015 year
+bysort geo2_mx2015: gen increase = murder_rate - murder_rate[_n-1]
+replace increase = 0 if increase == .
+gen spike1 = 1 if increase > 10
+replace spike1 = 0 if spike1 == .
+gen spike2 = 1 if increase > 15
+replace spike2 = 0 if spike2 == .
+gen spike3 = 1 if increase > 30
+replace spike3 = 0 if spike3 == .
+gen spike4 = 1 if increase > 50
+replace spike4 = 0 if spike4 == .
+
+// Creating variable for number of spikes 
+bysort geo2_mx2015: gen tot_spike1 = sum(spike1)
+bysort geo2_mx2015: gen tot_spike2 = sum(spike2)	
+bysort geo2_mx2015: gen tot_spike3 = sum(spike3)
+bysort geo2_mx2015: gen tot_spike4 = sum(spike4)	
+
+// Creating classifier based on number of spikes (stand-in for est. change in violent activity)
+bysort geo2_mx2015: egen violence_level_a = max(tot_spike1)
+bysort geo2_mx2015: egen violence_level_b = max(tot_spike2)
+bysort geo2_mx2015: egen violence_level_c = max(tot_spike3)
+bysort geo2_mx2015: egen violence_level_d = max(tot_spike4)
+
+
+export excel using "murders_tableau.xlsx", firstrow(variables) nolabel replace
+
+				
+				
+				
+		*===== CREATING VIOLENCE LEVELS FOR CENSUS DATASET ======*
+
+use "population_tableau.dta", clear
+
+merge 1:1 geo2_mx2015 year using "firearm_murders_tableau.dta", nogenerate
+merge 1:1 geo2_mx2015 year using "murders_tableau.dta"
+
+drop if year>2014 | year<2004
+
+// Replacing missing values
+replace murders = 0 if murders == .
+
+// Creating variable for yearly murder rate (per 100,000)
+gen murder_rate = (murders/population)*100000
+
+
+// Creating dummies for spikes in violence
+sort geo2_mx2015 year
+bysort geo2_mx2015: gen increase = murder_rate - murder_rate[_n-1]
+replace increase = 0 if increase == .
+gen spike1 = 1 if increase > 10
+replace spike1 = 0 if spike1 == .
+gen spike2 = 1 if increase > 15
+replace spike2 = 0 if spike2 == .
+gen spike3 = 1 if increase > 30
+replace spike3 = 0 if spike3 == .
+gen spike4 = 1 if increase > 50
+replace spike4 = 0 if spike4 == .
+
+// Creating variable for number of spikes 
+bysort geo2_mx2015: gen tot_spike1 = sum(spike1)
+bysort geo2_mx2015: gen tot_spike2 = sum(spike2)	
+bysort geo2_mx2015: gen tot_spike3 = sum(spike3)
+bysort geo2_mx2015: gen tot_spike4 = sum(spike4)	
+
+// Creating classifier based on number of spikes (stand-in for est. change in violent activity)
+bysort geo2_mx2015: egen violence_level_a = max(tot_spike1)
+bysort geo2_mx2015: egen violence_level_b = max(tot_spike2)
+bysort geo2_mx2015: egen violence_level_c = max(tot_spike3)
+bysort geo2_mx2015: egen violence_level_d = max(tot_spike4)
+				
+// Dropping repeated values
+bysort geo2_mx2015: gen count = _n
+keep if count == 1
+
+// Dropping unnecessary variables
+keep geo2_mx2015 violence_level_a violence_level_b violence_level_c violence_level_d
+				
+save "violence_levels.dta", replace			
+				
+				
+				*======= UPDATING MATER DATASET =======*
+				
+// Loading 2015 Mexican Census dataset				
+use "master_data.dta", clear
+
+// Merging murder rates with census data
+merge m:1 geo2_mx2015 using "violence_levels.dta"
+drop if _merge ==2	
+drop _merge				
+				
+save "master_data_updated.dta", replace			
+				
+								*** END ***
+
+								
+
+								
+								
+								
+								
