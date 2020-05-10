@@ -4,225 +4,176 @@
 # See README or original paper for additional details and context. Any errors are my own.
 
 
-
-# Setting up everything... 
-
 # Clearing previous session.
 rm(list = ls())
 
-# Setting working directory.
-setwd("/Users/jordan/Documents/Violence in Mexico")
-
 # Loading packages.
-library("foreign")
 library("tidyverse")
 
 # Loading yearly population estimates by municipality from CONAPO.
-municipio_population1990_2030 <- read_csv("municipio_population1990_2030.csv")
+municipio_population1990_2030 <- read_csv("datasets/municipio_population1990_2030.csv")
 
 # Loading dataset on all intentional deaths in Mexico from INEGI.
-load("injury.intent.RData")
+load("datasets/injury.intent.RData")
+injury_intent <- as_tibble(injury.intent)
+rm(injury.intent)
 
-# Loading 2015 Intercensal Survey from INEGI. Preventing geo2_mx2015 from converting to factor to allow merge. 
-ipums <- read.spss("ipumsi_00004.sav", to.data.frame = TRUE, max.value.labels = 2000)
-
-# Converting datasets from data.frame class to tbd_df
-injury.intent <- as_tibble(injury.intent)
-municipio_population1990_2030 <- as_tibble(municipio_population1990_2030)
-ipums <- as_tibble(ipums)
+# Loading results from 2015 Intercensal Survey. 
+load("datasets/ipums.RData")
 
 
 # ----------------------- CALCULATING MURDER RATES BY MUNICIPALITY ---------------------------
 
+# Restricting to years of interest, dropping sex-specific populations, and renaming variables for consistency.
+mxpop <- municipio_population1990_2030 %>%
+    filter(Year > 2003 & Year < 2015, Sex == "Total") %>%
+    select(c(Code, Year, Population)) %>%
+    rename(geo2_mx2015 = Code, year = Year, population = Population)
 
-# Restricting sample to only years of interst (2004 - 2014). Dropping sex-specific populations.
-mxpop <- filter(municipio_population1990_2030, Year > 2003 & Year < 2015, Sex == "Total")
-mxpop <- select(mxpop, c(Code, Year, Population))
-
-# Renaming municipality geo-code for consistency with other datasets.
-mxpop <- rename(mxpop, geo2_mx2015 = Code, year = Year, population = Population)
-
-# Restricting sample to only years of interest (2004 - 2014).
-murders <- filter(injury.intent, year_occur > 2003 & year_occur < 2015)
-
-# Creating geo-code for municipalities that is consistent across datasets.
-murders$geo2_mx2015 <- murders$state_occur_death*1000 + murders$mun_occur_death
-
-# Renaming variables to keep then consistent across datasets.
-murders$year <- murders$year_occur
-
-# Restricting the sample to only deaths likely to be associated with drug violence (e.g. exclu. suicide).
-murders <- filter(murders, intent == "Homicide")
-
-# Dropping unnecessary variables.
-murders <- select(murders, year, geo2_mx2015)
-
-# Calculating the number of murders by year. 
-annual_murders <- count(murders, year, geo2_mx2015)
-annual_murders <- rename(annual_murders, murders = n)
+# Restricting sample to homicides in years of interest (2004 - 2014), renaming variables for 
+# consistency and counting the number of homicides occuring in each municipality each year. 
+homicides <- injury_intent %>%
+    filter(year_occur > 2003 & year_occur < 2015) %>%
+    filter(intent == "Homicide") %>%
+    rename(year = year_occur) %>%
+    mutate(geo2_mx2015 = state_occur_death*1000 + mun_occur_death) %>%
+    group_by(geo2_mx2015, year) %>%
+    summarise(annual_murders = n())
 
 # Merging population estimates with murders by municipality.
-md_set <- left_join(mxpop, annual_murders, by = c("geo2_mx2015", "year"))
+# Replacing missing values for murders with zeros. Calculating homicide rates (as homicides per 100,000).
 
-# Replacing missing values for murders with zeros.
-md_set$murders <- replace_na(md_set$murders, 0)
-
-# Calculating murder rates.
-md_set$murder_rate <- (md_set$murders)/(md_set$population)*100000
-
+homicide_rate <- mxpop %>%
+    left_join(homicides, by = c("geo2_mx2015", "year")) %>%
+    mutate(
+        annual_murders = replace_na(annual_murders, 0), 
+        murder_rate = (annual_murders/population)*100000
+    )
+    
+homicide_rate <- homicide_rate %>%
+    mutate(mrate = str_c("mrate_", homicide_rate$year)) %>%
+    pivot_wider(id_cols = c(geo2_mx2015), names_from = mrate, values_from = murder_rate)
 
 
 # ----------------- CALCULATING FIREARM MURDER RATE BY MUNICIPALITY -----------------------
 
 
-# Re-loading dataset on all intentional deaths in Mexico from INEGI.
-fmurders <- injury.intent
-
-# Creating geo-code for municipalities that is consistent across datasets.
-fmurders$geo2_mx2015 <- fmurders$state_occur_death*1000 + fmurders$mun_occur_death
-
-# Restricting sample to only years of interest (2004 - 2014).
-fmurders <- filter(fmurders, year_occur > 2003 & year_occur < 2015)
-
-# Restricting the sample to only deaths likely to be associated with drug violence (e.g. exclu. suicide).
-fmurders <- filter(fmurders, intent == "Homicide", mechanism == "Firearm")
-
-# Renaming variables to keep then consistent across datasets and dropping unnecessary variables.
-fmurders$year <- fmurders$year_occur
-fmurders <- select(fmurders, year, geo2_mx2015)
-
-# Calculating the number of murders by year. 
-annual_fmurders <- count(fmurders, year, geo2_mx2015)
-annual_fmurders <- rename(annual_fmurders, firearm_murders = n)
+# Restricting sample to homicides using firearms in years of interest (2004 - 2014) since these
+# are more likely to result from drug-related violence. Renaming renaming variables for 
+# consistency and counting the number of homicides occuring in each municipality each year.
+firearm_homicides <- injury_intent %>%
+    filter(year_occur > 2003 & year_occur < 2015) %>%
+    filter(intent == "Homicide", mechanism == "Firearm") %>%
+    rename(year = year_occur) %>%
+    mutate(geo2_mx2015 = state_occur_death*1000 + mun_occur_death) %>%
+    group_by(geo2_mx2015, year) %>%
+    summarise(firearm_murders = n())
 
 # Merging firearm murders with data on population and all murders by municipality.
-md_set <- left_join(md_set, annual_fmurders, by = c("geo2_mx2015", "year"))
+# Replacing missing values for murders with zeros. Calculating homicide rates (as homicides per 100,000).
+firearm_homicide_rate <- mxpop %>%
+    left_join(firearm_homicides, by = c("geo2_mx2015", "year")) %>%
+    mutate(
+        firearm_murders = replace_na(firearm_murders, 0), 
+        firearm_murder_rate = (firearm_murders/population)*100000
+    )
 
-# Replacing missing values for firearm murders with zeros.
-md_set$firearm_murders <- replace_na(md_set$firearm_murders, 0)
+# Bringing murder rates in a given municipality into a single row. 
+firearm_homicide_rate <- firearm_homicide_rate %>%
+    mutate(fmrate = str_c("fmrate_", firearm_homicide_rate$year)) %>%
+    pivot_wider(id_cols = geo2_mx2015, names_from = fmrate, values_from = firearm_murder_rate)
 
-# Calculating murder rates.
-md_set$firearm_murder_rate <- (md_set$firearm_murders)/(md_set$population)*100000
-
-# Removing data frames that are no longer needed.
-rm(fmurders, injury.intent, municipio_population1990_2030, murders, mxpop, annual_murders, annual_fmurders)
-
+# Removing intermediate steps.
+rm(injury_intent, municipio_population1990_2030, mxpop, homicides, firearm_homicides)
 
 
-
-# ---------------------------- CREATING MASTER DATASET ------------------------------------
-
-
-# Creating variables for the murder rate in each year for all municipalities with data.
-md_set$murder_rate_2004 <- if_else(md_set$year == 2004, md_set$murder_rate, 0)
-md_set$murder_rate_2005 <- if_else(md_set$year == 2005, md_set$murder_rate, 0)
-md_set$murder_rate_2006 <- if_else(md_set$year == 2006, md_set$murder_rate, 0)
-md_set$murder_rate_2007 <- if_else(md_set$year == 2007, md_set$murder_rate, 0)
-md_set$murder_rate_2008 <- if_else(md_set$year == 2008, md_set$murder_rate, 0)
-md_set$murder_rate_2009 <- if_else(md_set$year == 2009, md_set$murder_rate, 0)
-md_set$murder_rate_2010 <- if_else(md_set$year == 2010, md_set$murder_rate, 0)
-md_set$murder_rate_2011 <- if_else(md_set$year == 2011, md_set$murder_rate, 0)
-md_set$murder_rate_2012 <- if_else(md_set$year == 2012, md_set$murder_rate, 0)
-md_set$murder_rate_2013 <- if_else(md_set$year == 2013, md_set$murder_rate, 0)
-md_set$murder_rate_2014 <- if_else(md_set$year == 2014, md_set$murder_rate, 0)
-
-# Creating two-colum data frame with unique entries for municipality and the murder rates in 2004
-murder_merge <- enframe(
-  tapply(md_set$murder_rate_2004, md_set$geo2_mx2015, max), 
-  name = "geo2_mx2015", value = "murder_rate_2004")
-
-# Adding additional columns for the murder rate in each subsequent year up to 2014
-murder_merge$murder_rate_2005 <- tapply(md_set$murder_rate_2005, md_set$geo2_mx2015, max)
-murder_merge$murder_rate_2006 <- tapply(md_set$murder_rate_2006, md_set$geo2_mx2015, max)
-murder_merge$murder_rate_2007 <- tapply(md_set$murder_rate_2007, md_set$geo2_mx2015, max)
-murder_merge$murder_rate_2008 <- tapply(md_set$murder_rate_2008, md_set$geo2_mx2015, max)
-murder_merge$murder_rate_2009 <- tapply(md_set$murder_rate_2009, md_set$geo2_mx2015, max)
-murder_merge$murder_rate_2010 <- tapply(md_set$murder_rate_2010, md_set$geo2_mx2015, max)
-murder_merge$murder_rate_2011 <- tapply(md_set$murder_rate_2011, md_set$geo2_mx2015, max)
-murder_merge$murder_rate_2012 <- tapply(md_set$murder_rate_2012, md_set$geo2_mx2015, max)
-murder_merge$murder_rate_2013 <- tapply(md_set$murder_rate_2013, md_set$geo2_mx2015, max)
-murder_merge$murder_rate_2014 <- tapply(md_set$murder_rate_2014, md_set$geo2_mx2015, max)
+# -------------------- CLEANING UP 2015 INTERCENSAL SURVEY DATA -----------------------------
 
 # Changing all variable names in IPUMS to lower case and simplifying variable names.
 colnames(ipums) <- tolower(colnames(ipums))
 
-# Simplifying names of variables. Creating factor variable for municipality.
-ipums <- rename(ipums, afrdes_mom = mx2015a_afrdes_mom, afrdes_pop = mx2015a_afrdes_pop, afrdes = mx2015a_afrdes,
-                indig_mom = mx2015a_indig_mom, indig_pop = mx2015a_indig_pop, mig5 = mx2015a_migmun5)
+# Simplifying names of variables and dropping uneccessary variables. 
+ipums <- ipums %>%
+    rename(afrdes_mom = mx2015a_afrdes_mom, afrdes_pop = mx2015a_afrdes_pop, 
+           afrdes = mx2015a_afrdes, indig_mom = mx2015a_indig_mom, indig_pop = mx2015a_indig_pop, 
+           mig5 = mx2015a_migmun5) %>%
+    select(sex, age, urban, sizemx, geo1_mx2015, geo2_mx2015, bplmx, mig5, 
+           lit, edattain, school, yrschool, incearn, lit_mom, lit_pop, yrschool_mom, yrschool_pop,
+           incearn_mom, incearn_pop, afrdes, afrdes_mom, afrdes_pop, indig, indig_mom, indig_pop) %>%
+    mutate(municipality = as_factor(geo2_mx2015))
+    
+# Converting age to numeric value.
+ipums$age <- as.character(ipums$age)
+    ipums$age[ipums$age == "1 year"] <- "1"
+    ipums$age[ipums$age == "2 years"] <- "2"
+    ipums$age[ipums$age == "Less than 1 year"] <- "0"
+    ipums$age[ipums$age == "100+"] <- "100"
+    ipums$age[ipums$age == "Not reported/missing"] <- NA
+ipums$age <- as.numeric(ipums$age)
 
-ipums$municipality <- as.factor(ipums$geo2_mx2015)
+# Converting yrschool to numeric value.
+ipums$yrschool <- as.character(ipums$yrschool)
+    ipums$yrschool[ipums$yrschool == "NIU (not in universe)"] <- NA
+    ipums$yrschool[ipums$yrschool == "Unknown/missing"] <- NA
+    ipums$yrschool[ipums$yrschool == "Some primary"] <- NA
+    ipums$yrschool[ipums$yrschool == "Some secondary"] <- NA
+    ipums$yrschool[ipums$yrschool == "Some tertiary"] <- NA
+    ipums$yrschool[ipums$yrschool == "Some technical after primary"] <- NA
+    ipums$yrschool[ipums$yrschool == "None or pre-school"] <- 0
+ipums$yrschool <- parse_number(as.character(ipums$yrschool, na = NA, trim_ws = TRUE))
 
-# Dropping unnecessary variables from 2015 Intercensal Survey.
-mdta <- select(ipums, sex, age, urban, sizemx, geo1_mx2015, geo2_mx2015, municipality, bplmx, mig5, lit, edattain, school, yrschool, 
-              incearn, lit_mom, lit_pop, yrschool_mom, yrschool_pop, incearn_mom, incearn_pop, afrdes, afrdes_mom, afrdes_pop, indig, 
-              indig_mom, indig_pop)
-
-# Converting age to numeric value. 
-mdta$age <- as.character(mdta$age)
-mdta$age[mdta$age == "1 year"] <- 1
-mdta$age[mdta$age == "2 years"] <- 2
-mdta$age[mdta$age == "Less than 1 year"] <- 0
-mdta$age[mdta$age == "100+"] <- 100
-mdta$age[mdta$age == "Not reported/missing"] <- NA
-mdta$age <- as.numeric(mdta$age)
-
-# Converting yrschool to numeric value
-mdta$yrschool <- as.character(mdta$yrschool)
-mdta$yrschool[mdta$yrschool == "NIU (not in universe)"] <- NA
-mdta$yrschool[mdta$yrschool == "Unknown/missing"] <- NA
-mdta$yrschool[mdta$yrschool == "Some primary"] <- NA
-mdta$yrschool[mdta$yrschool == "Some secondary"] <- NA
-mdta$yrschool[mdta$yrschool == "Some tertiary"] <- NA
-mdta$yrschool[mdta$yrschool == "Some technical after primary"] <- NA
-mdta$yrschool[mdta$yrschool == "None or pre-school"] <- 0
-mdta$yrschool <- parse_number(as.character(mdta$yrschool, na = NA, trim_ws = TRUE))
-
-# Converting yrschool_mom to numeric value
-mdta$yrschool_mom <- as.character(mdta$yrschool_mom)
-mdta$yrschool_mom[mdta$yrschool_mom == "NIU (not in universe)"] <- NA
-mdta$yrschool_mom[mdta$yrschool_mom == "Unknown/missing"] <- NA
-mdta$yrschool_mom[mdta$yrschool_mom == "Some primary"] <- NA
-mdta$yrschool_mom[mdta$yrschool_mom == "Some secondary"] <- NA
-mdta$yrschool_mom[mdta$yrschool_mom == "Some tertiary"] <- NA
-mdta$yrschool_mom[mdta$yrschool_mom == "Some technical after primary"] <- NA
-mdta$yrschool_mom[mdta$yrschool_mom == "None or pre-school"] <- 0
-mdta$yrschool_mom <- parse_number(as.character(mdta$yrschool_mom, na = NA, trim_ws = TRUE))
+# Converting yrschool_mom to numeric value.
+ipums$yrschool_mom <- as.character(ipums$yrschool_mom)
+    ipums$yrschool_mom[ipums$yrschool_mom == "NIU (not in universe)"] <- NA
+    ipums$yrschool_mom[ipums$yrschool_mom == "Unknown/missing"] <- NA
+    ipums$yrschool_mom[ipums$yrschool_mom == "Some primary"] <- NA
+    ipums$yrschool_mom[ipums$yrschool_mom == "Some secondary"] <- NA
+    ipums$yrschool_mom[ipums$yrschool_mom == "Some tertiary"] <- NA
+    ipums$yrschool_mom[ipums$yrschool_mom == "Some technical after primary"] <- NA
+    ipums$yrschool_mom[ipums$yrschool_mom == "None or pre-school"] <- 0
+ipums$yrschool_mom <- parse_number(as.character(ipums$yrschool_mom, na = NA, trim_ws = TRUE))
 
 # Converting yrschool_pop to numeric value
-mdta$yrschool_pop <- as.character(mdta$yrschool_pop)
-mdta$yrschool_pop[mdta$yrschool_pop == "NIU (not in universe)"] <- NA
-mdta$yrschool_pop[mdta$yrschool_pop == "Unknown/missing"] <- NA
-mdta$yrschool_pop[mdta$yrschool_pop == "Some primary"] <- NA
-mdta$yrschool_pop[mdta$yrschool_pop == "Some secondary"] <- NA
-mdta$yrschool_pop[mdta$yrschool_pop == "Some tertiary"] <- NA
-mdta$yrschool_pop[mdta$yrschool_pop == "Some technical after primary"] <- NA
-mdta$yrschool_pop[mdta$yrschool_pop == "None or pre-school"] <- 0
-mdta$yrschool_pop <- parse_number(as.character(mdta$yrschool_pop, na = NA, trim_ws = TRUE))
+ipums$yrschool_pop <- as.character(ipums$yrschool_pop)
+    ipums$yrschool_pop[ipums$yrschool_pop == "NIU (not in universe)"] <- NA
+    ipums$yrschool_pop[ipums$yrschool_pop == "Unknown/missing"] <- NA
+    ipums$yrschool_pop[ipums$yrschool_pop == "Some primary"] <- NA
+    ipums$yrschool_pop[ipums$yrschool_pop == "Some secondary"] <- NA
+    ipums$yrschool_pop[ipums$yrschool_pop == "Some tertiary"] <- NA
+    ipums$yrschool_pop[ipums$yrschool_pop == "Some technical after primary"] <- NA
+    ipums$yrschool_pop[ipums$yrschool_pop == "None or pre-school"] <- 0
+ipums$yrschool_pop <- parse_number(as.character(ipums$yrschool_pop, na = NA, trim_ws = TRUE))
 
-# Recoding missing values as NA. 
-mdta$incearn[mdta$incearn > 2e+07] <- NA
-mdta$incearn_mom[mdta$incearn_mom > 2e+07] <- NA
-mdta$incearn_pop[mdta$incearn_pop > 2e+07] <- NA
-mdta$mig5[mdta$mig5 > 40000] <- NA
-mdta$lit[mdta$lit == "NIU (not in universe)"] <- NA
-mdta$edattain[mdta$edattain == "NIU (not in universe)"] <- NA
-mdta$school[mdta$school == "NIU (not in universe)"] <- NA
-mdta$afrdes[mdta$afrdes == "Unknown"] <- NA
-mdta$indig[mdta$indig == "Unknown"] <- NA
+# Recoding missing values as NA. IPUMS records missing values as large numbers greater than 2e+07.
+ipums$incearn[ipums$incearn > 2e+07] <- NA
+ipums$incearn_mom[ipums$incearn_mom > 2e+07] <- NA
+ipums$incearn_pop[ipums$incearn_pop > 2e+07] <- NA
+ipums$mig5[ipums$mig5 > 40000] <- NA
+ipums$lit[ipums$lit == "NIU (not in universe)"] <- NA
+ipums$edattain[ipums$edattain == "NIU (not in universe)"] <- NA
+ipums$school[ipums$school == "NIU (not in universe)"] <- NA
+ipums$afrdes[ipums$afrdes == "Unknown"] <- NA
+ipums$indig[ipums$indig == "Unknown"] <- NA
 
 # Dropping observations that are missing values for essential variables. 
-mdta <- filter(mdta, is.na(mdta$age) == FALSE & is.na(mdta$municipality) == FALSE & is.na(mdta$yrschool) == FALSE)
+ipums <- filter(ipums, is.na(ipums$age) == FALSE & is.na(ipums$municipality) == FALSE & is.na(ipums$yrschool) == FALSE)
+
+
+# ---------------------------- CREATING MASTER DATASET ------------------------------------
 
 # Formatting data for merge.
-mdta$geo2_mx2015 <- as.character(mdta$geo2_mx2015)
-murder_merge$geo2_mx2015 <- as.character(murder_merge$geo2_mx2015)
+ipums$geo2_mx2015 <- as.character(ipums$geo2_mx2015)
+homicide_rate$geo2_mx2015 <- as.character(homicide_rate$geo2_mx2015)
+firearm_homicide_rate$geo2_mx2015 <- as.character(firearm_homicide_rate$geo2_mx2015)
+
 
 # Merging murder rate variables into 2015 Intercensal Survey.
-mdta <- left_join(mdta, murder_merge, by = c("geo2_mx2015"))
+mdta <- ipums %>%
+    left_join(firearm_homicide_rate, by = "geo2_mx2015") %>%
+    left_join(homicide_rate, by = "geo2_mx2015")
 
 # Removing old datasets from memory.
-rm(ipums, murder_merge, md_set)
-
+rm(ipums, homicide_rate, firearm_homicide_rate)
 
 
 # -----------------GENERATING INDICATOR VARIABLES FOR ANALYSIS -------------------------
@@ -274,15 +225,18 @@ mdta$migration <- if_else(as.character(mdta$bplmx) != as.character(mdta$geo1_mx2
 # Ordering dataset by state and municipality
 mdta <- arrange(mdta, as.numeric(mdta$geo2_mx2015))
 
-# --------------------------- SAVING THE FILE FOR FUTURE USE -------00----------------------
+
+
+# --------------------------- SAVING THE FILE FOR FUTURE USE ----------------------------
 
 # Creating a random sample (n = 250,000) for faster processing
 smdta <- sample_n(mdta, 250000)
 
 # Saving the files.
-save(mdta, file = "master_dataset.RData")
-save(smdta, file = "sample_dataset.RData")
+save(mdta, file = "educ_mexico_data.RData")
+save(smdta, file = "educ_mexico_sample_data.RData")
 
 
 # -------------------------------------- END -------------------------------------------
+
 
